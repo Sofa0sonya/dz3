@@ -1,0 +1,127 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Загрузка и преобразование данных.md</title><style></style></head><body id="preview">
+<hr>
+<p class="has-line-data" data-line-start="1" data-line-end="5">title: “Homework № 3”<br>
+author: “Plaxina S.V.”<br>
+date: &quot;<code>r Sys.Date()</code>&quot;<br>
+output: html_document</p>
+<hr>
+<pre><code class="has-line-data" data-line-start="8" data-line-end="19" class="language-{=html}">&lt;style type=&quot;text/css&quot;&gt;
+body{
+  font-family: Helvetica;
+  font-size: 12pt;
+}
+/* Headers */
+h1, h2{
+  font-size: 16pt;
+}
+&lt;/style&gt;
+</code></pre>
+<pre><code class="has-line-data" data-line-start="21" data-line-end="29" class="language-{r">knitr::opts_chunk$set(
+    message = FALSE,
+    warning = FALSE,
+    include = FALSE
+)
+library(tidyverse)
+library(readxl)
+</code></pre>
+<h1 class="code-line" data-line-start="30" data-line-end="31"><a id="____30"></a>Загрузка и преобразование данных</h1>
+<pre><code class="has-line-data" data-line-start="33" data-line-end="38" class="language-{r">pima &lt;- read_excel(path = 'pima.xlsx')
+pima &lt;- na.omit(pima)
+pima &lt;- pima %&gt;%
+    mutate_at(vars(diabetes), as.factor)
+</code></pre>
+<h1 class="code-line" data-line-start="39" data-line-end="40"><a id="__39"></a>Описательные статистики</h1>
+<h2 class="code-line" data-line-start="41" data-line-end="42"><a id="1______glucose_pressure_mass_41"></a>1. Рассчитайте описательные статистики для переменных glucose, pressure, mass.</h2>
+<pre><code class="has-line-data" data-line-start="44" data-line-end="63" class="language-{r"># Расчет основных статистик для каждой переменной:
+glucose_summary &lt;- summary(pima$glucose)
+pressure_summary &lt;- summary(pima$pressure)
+mass_summary &lt;- summary(pima$mass)
+
+# Расчет стандартного отклонения для каждой переменной:
+glucose_sd &lt;- sd(pima$glucose, na.rm = TRUE)
+pressure_sd &lt;- sd(pima$pressure, na.rm = TRUE)
+mass_sd &lt;- sd(pima$mass, na.rm = TRUE)
+
+# Вывод результатов:
+glucose_summary
+pressure_summary
+mass_summary
+
+glucose_sd
+pressure_sd
+mass_sd
+</code></pre>
+<h2 class="code-line" data-line-start="64" data-line-end="65"><a id="2______diabetes_64"></a>2. Рассчитайте описательную статистику для переменной diabetes.</h2>
+<pre><code class="has-line-data" data-line-start="66" data-line-end="76" class="language-{r"># Расчет абсолютных частот:
+absolute_frequencies &lt;- table(pima$diabetes)
+
+# Расчет относительных частот:
+relative_frequencies &lt;- prop.table(absolute_frequencies) * 100
+
+# Вывод результатов:
+absolute_frequencies
+relative_frequencies
+</code></pre>
+<h2 class="code-line" data-line-start="77" data-line-end="78"><a id="____age___age_group_______2135_3649__50_______77"></a>Создайте на основе переменной age новую переменную age_group, которая будет отражать следующие возрастные группы: 21–35, 36–49 и 50+. Посчитайте описательную статистику для новой переменной.</h2>
+<pre><code class="has-line-data" data-line-start="80" data-line-end="92" class="language-{r">pima &lt;- pima %&gt;%
+  mutate(age_group = ifelse(age &lt;= 35, &quot;21-35&quot;,
+  ifelse(age &lt;= 49, &quot;36-49&quot;, &quot;50+&quot;)))
+
+pima &lt;- mutate(pima, age_group = as.factor(age_group))
+
+abs_age &lt;- table(pima$age_group)
+rel_age &lt;- (abs_age / length(pima$age_group)) * 100
+
+abs_age
+rel_age
+</code></pre>
+<h2 class="code-line" data-line-start="93" data-line-end="94"><a id="3__90_____pedigree_93"></a>3. Определите 90% доверительный интервал для переменной pedigree</h2>
+<pre><code class="has-line-data" data-line-start="96" data-line-end="109" class="language-{r">mean_pedigree &lt;- mean(pima$pedigree)
+sd_pedigree &lt;- sd(pima$pedigree)
+se_pedigree &lt;- sd_pedigree / sqrt(length(pima$pedigree))
+
+alpha &lt;- 0.1
+df &lt;- length(pima$pedigree) - 1
+t &lt;- qt(alpha / 2, df, lower.tail = F)
+
+pedigree_interval &lt;- c(mean_pedigree - t * se_pedigree,
+                      mean_pedigree + t * se_pedigree)
+
+pedigree_interval
+</code></pre>
+<h2 class="code-line" data-line-start="110" data-line-end="111"><a id="4_______glucose____________________pos__neg___diabetes_110"></a>4. Постройте график плотности вероятности для переменной glucose и отметьте на нем среднее значение. Для той же переменной постройте гистограмму. Постройте два ящика с усами для значений pos и neg соответственно переменной diabetes</h2>
+<pre><code class="has-line-data" data-line-start="113" data-line-end="119" class="language-{r">dens &lt;- ggplot(data = pima) +
+  geom_density(aes(glucose)) +
+  geom_vline(xintercept = mean(pima$glucose), color = 'red') +
+  labs(title = &quot;График плотности вероятности glucose&quot;)
+print(dens)
+</code></pre>
+<pre><code class="has-line-data" data-line-start="121" data-line-end="128" class="language-{r">hist_gl &lt;- hist(pima$glucose,
+  breaks = 50,
+  main = &quot;Распределение глюкозы&quot;,
+  xlab = &quot;glucose&quot;)
+
+print(hist_gl)
+</code></pre>
+<pre><code class="has-line-data" data-line-start="130" data-line-end="135" class="language-{r">box &lt;- ggplot(data = pima) +
+  geom_boxplot(aes(diabetes, glucose, fill = diabetes)) +
+  labs(title = &quot;Распределение наличия диабета&quot;)
+print(box)
+</code></pre>
+<h2 class="code-line" data-line-start="136" data-line-end="137"><a id="5_______________X________Y___________diabetes_136"></a>5. Постройте на одном графике две диаграммы рассеяния для наличия или отсутствия диабета. По оси X представьте значения обхвата трицепса, а по оси Y — массу тела. Выполните окрашивание, заливку и группирование по переменной diabetes.</h2>
+<pre><code class="has-line-data" data-line-start="139" data-line-end="154" class="language-{r"># Удаление строк, где обхват трицепса или масса тела равны нулю
+pima_clean &lt;- subset(pima, triceps != 0 &amp; mass != 0)
+# Построение графика
+facet &lt;- ggplot(data = pima_clean,
+                aes(x = triceps, y = mass)) +
+  geom_point(color = &quot;black&quot;, shape = 21, size = 4,
+             aes(fill = factor(pima_clean$diabetes))) +
+  scale_fill_manual(values = c(&quot;pink&quot;, &quot;lightgreen&quot;)) +
+  facet_grid(. ~ diabetes) +
+  labs(title = &quot;Диаграмма рассеяния диабета&quot;,
+       x = &quot;Обхват трицепса&quot;, y = &quot;Масса тела&quot;) +
+  theme_light()
+
+print(facet)
+</code></pre>
+</body></html>

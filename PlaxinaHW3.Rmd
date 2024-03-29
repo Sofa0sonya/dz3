@@ -1,0 +1,154 @@
+---
+title: "Homework № 3"
+author: "Plaxina S.V."
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{=html}
+<style type="text/css">
+body{
+  font-family: Helvetica;
+  font-size: 12pt;
+}
+/* Headers */
+h1, h2{
+  font-size: 16pt;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	include = FALSE
+)
+library(tidyverse)
+library(readxl)
+```
+
+# Загрузка и преобразование данных
+
+```{r data, include=TRUE}
+pima <- read_excel(path = 'pima.xlsx')
+pima <- na.omit(pima)
+pima <- pima %>%
+    mutate_at(vars(diabetes), as.factor)
+```
+
+# Описательные статистики
+
+## 1. Рассчитайте описательные статистики для переменных glucose, pressure, mass.
+
+```{r stat num, include=TRUE}
+# Расчет основных статистик для каждой переменной:
+glucose_summary <- summary(pima$glucose)
+pressure_summary <- summary(pima$pressure)
+mass_summary <- summary(pima$mass)
+
+# Расчет стандартного отклонения для каждой переменной:
+glucose_sd <- sd(pima$glucose, na.rm = TRUE)
+pressure_sd <- sd(pima$pressure, na.rm = TRUE)
+mass_sd <- sd(pima$mass, na.rm = TRUE)
+
+# Вывод результатов:
+glucose_summary
+pressure_summary
+mass_summary
+
+glucose_sd
+pressure_sd
+mass_sd
+```
+
+## 2. Рассчитайте описательную статистику для переменной diabetes. 
+```{r stat factor, include=TRUE}
+# Расчет абсолютных частот:
+absolute_frequencies <- table(pima$diabetes)
+
+# Расчет относительных частот:
+relative_frequencies <- prop.table(absolute_frequencies) * 100
+
+# Вывод результатов:
+absolute_frequencies
+relative_frequencies
+```
+
+## Создайте на основе переменной age новую переменную age_group, которая будет отражать следующие возрастные группы: 21–35, 36–49 и 50+. Посчитайте описательную статистику для новой переменной.
+
+```{r new_group, include=TRUE}
+pima <- pima %>%
+  mutate(age_group = ifelse(age <= 35, "21-35",
+  ifelse(age <= 49, "36-49", "50+")))
+
+pima <- mutate(pima, age_group = as.factor(age_group))
+
+abs_age <- table(pima$age_group)
+rel_age <- (abs_age / length(pima$age_group)) * 100
+
+abs_age
+rel_age
+```
+
+## 3. Определите 90% доверительный интервал для переменной pedigree
+
+```{r interval, include=TRUE}
+mean_pedigree <- mean(pima$pedigree)
+sd_pedigree <- sd(pima$pedigree)
+se_pedigree <- sd_pedigree / sqrt(length(pima$pedigree))
+
+alpha <- 0.1
+df <- length(pima$pedigree) - 1
+t <- qt(alpha / 2, df, lower.tail = F)
+
+pedigree_interval <- c(mean_pedigree - t * se_pedigree,
+                      mean_pedigree + t * se_pedigree)
+
+pedigree_interval
+```
+
+## 4. Постройте график плотности вероятности для переменной glucose и отметьте на нем среднее значение. Для той же переменной постройте гистограмму. Постройте два ящика с усами для значений pos и neg соответственно переменной diabetes
+
+```{r dens, include=TRUE}
+dens <- ggplot(data = pima) +
+  geom_density(aes(glucose)) +
+  geom_vline(xintercept = mean(pima$glucose), color = 'red') +
+  labs(title = "График плотности вероятности glucose")
+print(dens)
+```
+
+```{r hist, include=TRUE}
+hist_gl <- hist(pima$glucose,
+  breaks = 50,
+  main = "Распределение глюкозы",
+  xlab = "glucose")
+
+print(hist_gl)
+```
+
+```{r boxplot, include=TRUE}
+box <- ggplot(data = pima) +
+  geom_boxplot(aes(diabetes, glucose, fill = diabetes)) +
+  labs(title = "Распределение наличия диабета")
+print(box)
+```
+
+## 5. Постройте на одном графике две диаграммы рассеяния для наличия или отсутствия диабета. По оси X представьте значения обхвата трицепса, а по оси Y — массу тела. Выполните окрашивание, заливку и группирование по переменной diabetes.
+
+```{r facet, include=TRUE}
+# Удаление строк, где обхват трицепса или масса тела равны нулю
+pima_clean <- subset(pima, triceps != 0 & mass != 0)
+# Построение графика
+facet <- ggplot(data = pima_clean,
+                aes(x = triceps, y = mass)) +
+  geom_point(color = "black", shape = 21, size = 4,
+             aes(fill = factor(pima_clean$diabetes))) +
+  scale_fill_manual(values = c("pink", "lightgreen")) +
+  facet_grid(. ~ diabetes) +
+  labs(title = "Диаграмма рассеяния диабета",
+       x = "Обхват трицепса", y = "Масса тела") +
+  theme_light()
+
+print(facet)
+```
